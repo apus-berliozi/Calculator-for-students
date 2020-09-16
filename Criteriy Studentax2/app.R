@@ -1,7 +1,6 @@
+#Приложение/сайт, рассчитывающее критерий Стьюдента в загружаемом пользователем документе
 library(shiny)
 # Серверная составляющая
-
-
 server <- function(input, output) {
   pervoeznach <-
     reactive({
@@ -12,7 +11,7 @@ server <- function(input, output) {
       validate(need(ext == "csv", "Please upload a csv file"))
       rabfile <-
         read.csv(file$datapath, header = TRUE, sep = input$sep)
-      rabfile[1]
+      rabfile[input$prizn1]
     })
   vtoroeznach <- reactive({
     file <- input$file1
@@ -21,50 +20,71 @@ server <- function(input, output) {
     validate(need(ext == "csv", "Please upload a csv file"))
     rabfile <-
       read.csv(file$datapath, header = TRUE, sep = input$sep)
-    rabfile[2]
+    rabfile[input$prizn2]
   })
   statistica <-
-    reactive({
-      test <- t.test(pervoeznach(), vtoroeznach())
-      as.numeric(test$statistic)
+    reactive({ if(input$Check) {
+      test <- t.test(pervoeznach() ~ vtoroeznach())
+      as.numeric(test$statistic)}
+      else{
+        test <- t.test(pervoeznach(), vtoroeznach())
+        as.numeric(test$statistic)}
+      
     })
   pznach <- 
-    reactive({
-      test <- t.test(pervoeznach(), vtoroeznach())
+    reactive({ if(input$Check){
+      test <- t.test(pervoeznach() ~ vtoroeznach())
+      as.numeric(test$p.value) } else {      test <- t.test(pervoeznach(), vtoroeznach())
       as.numeric(test$p.value)
+        
+      }
     })
   parameter <- 
-    reactive({
-      test <- t.test(pervoeznach(), vtoroeznach())
-      as.numeric(test$parameter)
+    reactive({ if(input$Check){
+      test <- t.test(pervoeznach() ~ vtoroeznach())
+      as.numeric(test$parameter) } else{
+        test <- t.test(pervoeznach(),  vtoroeznach())
+        as.numeric(test$parameter)
+      }
     })
   pervoesredn <- 
-    reactive({
-      test <- t.test(pervoeznach(), vtoroeznach())
-      as.numeric(test$estimate[1])
+    reactive({ if(input$Check){
+      test <- t.test(pervoeznach() ~ vtoroeznach())
+      as.numeric(test$estimate[1]) } else{
+        test <- t.test(pervoeznach(), vtoroeznach())
+        as.numeric(test$estimate[1])
+      }
     })
   vtoroesredn <- 
-    reactive({
-      test <- t.test(pervoeznach(), vtoroeznach())
-      as.numeric(test$estimate[2])
+    reactive({ if(input$Check){
+      test <- t.test(pervoeznach() ~ vtoroeznach())
+      as.numeric(test$estimate[2]) } else {
+        test <- t.test(pervoeznach(), vtoroeznach())
+        as.numeric(test$estimate[2])
+      }
     })
   
-  output$ttest <- renderText({
-    statistica()
+  output$ttest <- renderText({ vekt <- c("Критерий Стьюдента равен:",
+                                       as.character(statistica()))
+  vekt
   }) 
-  output$parameter <- renderText({
-    parameter()
+  output$parameter <- renderText({ vekt <- c("Количество степеней свободы:",
+                                             as.character(parameter()))
+  vekt
   })
-  output$pvalue <- renderText({
-    pznach()
+  output$pvalue <- renderText({ vekt <- c("Величина p-значения:",
+                                          as.character(pznach()))
+  vekt
   })
-  output$pervoesredn <- renderText({
-    pervoesredn()
+  output$pervoesredn <- renderText({ vekt <- c("Среднее значение первой колонки/исследуемого признака:",
+                                               as.character(pervoesredn()))
+  vekt
   })
-  output$vtoroesredn <- renderText({
-    vtoroesredn()
+  output$vtoroesredn <- renderText({ vekt <- c("Среднее значение второй колонки/исследуемого признака:", input$p,
+                                               as.character(vtoroesredn()))
+  vekt
   })
-  output$prizn1 <- renderText(input$prizn1)
+  output$prizn1 <- renderText(input$prizn1) #NB: обмозговать так, чтобы пользователю не нужно было вводить заголовок 
   output$prizn2 <- renderText(input$prizn2)
   
   #Записываем результат
@@ -106,29 +126,31 @@ ui <- shinyUI(pageWithSidebar(
       ),
       'Двойные'
     ),
-    textInput("prizn1", "Введите заголовок первого столбца"),
-    textInput("prizn2", "Введите заголовок второго столбца")
+    numericInput("prizn1", "Введите номер столбца содержащего первый исследуемый признак", value = 0),
+    numericInput("prizn2", "Введите номер столбца, содержащего второй исследуемый признак или группирующий фактор", value = 0),
+    checkboxInput(
+      "Check",
+      "Во втором столбце находится группирующий признак",
+      value = FALSE
+    )
   ),
   mainPanel(p(
-    tags$b("Критерий Стьюдента равен:"),
     textOutput("ttest"),
-    p(tags$b("P-значение:"), textOutput("pvalue")),
+    br(),
+    p(textOutput("pvalue")),
+    br(),
     p(
-      tags$b("Количество степеней свободы:"),
       textOutput("parameter")
     ),
-    p(
-      tags$b("Среднее значение:"),
-      textOutput("prizn1"),
-      textOutput("pervoesredn")
+    br(),
+    p( textOutput("pervoesredn")
     ),
+    br(),
     p(
-      tags$b("Среднее значение:"),
-      textOutput("prizn2"),
       textOutput("vtoroesredn")
     ),
+    br()
   ),
-  p(tags$b("Критерий Стьюдента равен:"), textOutput("Chtopoluch")), #Тут выводится результат
   #Справочная информация
   h3("Справочная информация"),
   p(
@@ -164,4 +186,3 @@ t-критерий будет давать неадекватные резуль
 ))
 
 shinyApp(ui = ui, server = server)
-  
