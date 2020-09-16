@@ -1,3 +1,5 @@
+#U-критерий Манна Уитни
+
 library(shiny)
 server <- function(input, output) {
   pervoeznach <-
@@ -42,16 +44,12 @@ server <- function(input, output) {
     }
   })
   
-  output$Wilcoxtest <- renderText({
-    statistica()
+  output$Wilcoxtest <- renderText({ vekt <- c("U-критерий равен:", as.character(statistica()))
+    vekt
   })
-  output$pvalue <- renderText({
-    pznach()
+  output$pvalue <- renderText({ vekt <- c("p-значение равно:", as.character(pznach()))
   })
 }
-
-
-
 
 ui <- shinyUI(pageWithSidebar(
   headerPanel("Определение U критерия Манна-Уитни"),
@@ -107,9 +105,9 @@ ui <- shinyUI(pageWithSidebar(
   ),
   mainPanel(
     p(
-      tags$b("U-критерий равен:"),
       textOutput("Wilcoxtest"),
-      p(tags$b("P-значение:"), textOutput("pvalue"))
+      br(),
+      textOutput("pvalue")
     ),
     p(h2("Справочная инфоормация")),
     p(
@@ -134,7 +132,5 @@ ui <- shinyUI(pageWithSidebar(
       )
     )
   )
-  
 ))
 shinyApp(ui = ui, server = server)
-library(help = "stats")
